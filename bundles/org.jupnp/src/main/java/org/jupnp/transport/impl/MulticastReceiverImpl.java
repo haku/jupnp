@@ -21,7 +21,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
+import java.net.SocketAddress;
 import java.net.SocketException;
+import java.util.Iterator;
 
 import org.jupnp.model.UnsupportedDataException;
 import org.jupnp.transport.Router;
@@ -80,7 +82,14 @@ public class MulticastReceiverImpl implements MulticastReceiver<MulticastReceive
                     configuration.getPort());
             multicastAddress = new InetSocketAddress(configuration.getGroup(), configuration.getPort());
 
-            socket = new MulticastSocket(configuration.getPort());
+            Iterator<InetAddress> possibleBindAddresses = networkAddressFactory.getBindAddresses();
+            if (!possibleBindAddresses.hasNext()) {
+                throw new Exception(
+                        "Network interface has no usable bind addresses: " + multicastInterface.getDisplayName());
+            }
+            SocketAddress bindAddress = new InetSocketAddress(possibleBindAddresses.next(), configuration.getPort());
+
+            socket = new MulticastSocket(bindAddress);
             socket.setReuseAddress(true);
             socket.setReceiveBufferSize(32768); // Keep a backlog of incoming datagrams if we are not fast enough
 
